@@ -1,86 +1,964 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitHub Digest AI Agent</title>
+    <title>GitHub Digest AI Agent | Gemini 1.5 Flash</title>
+    <!-- Tailwind CSS CDN for the Flask app -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            300: '#a5b4fc',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            950: '#0f172a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+        }
+        code, pre {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.4);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.2);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.4);
+        }
+        /* Markdown rendering typography styles */
+        .prose-digest h1 { font-size: 1.5rem; font-weight: 700; margin-top: 1.25rem; margin-bottom: 0.75rem; color: #f8fafc; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; }
+        .prose-digest h2 { font-size: 1.25rem; font-weight: 700; margin-top: 1.25rem; margin-bottom: 0.6rem; color: #f1f5f9; display: flex; align-items: center; gap: 0.5rem; }
+        .prose-digest h3 { font-size: 1.05rem; font-weight: 600; margin-top: 1rem; margin-bottom: 0.5rem; color: #e2e8f0; }
+        .prose-digest p { margin-top: 0.5rem; margin-bottom: 0.75rem; line-height: 1.65; color: #cbd5e1; }
+        .prose-digest ul { list-style-type: disc; padding-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.75rem; color: #cbd5e1; }
+        .prose-digest ol { list-style-type: decimal; padding-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.75rem; color: #cbd5e1; }
+        .prose-digest li { margin-top: 0.25rem; margin-bottom: 0.25rem; line-height: 1.6; }
+        .prose-digest strong { color: #f8fafc; font-weight: 600; }
+        .prose-digest a { color: #818cf8; text-decoration: underline; text-underline-offset: 3px; font-weight: 500; transition: color 0.15s ease; }
+        .prose-digest a:hover { color: #a5b4fc; }
+        .prose-digest blockquote { border-left: 3px solid #6366f1; padding-left: 1rem; margin: 0.75rem 0; color: #94a3b8; font-style: italic; background: rgba(99, 102, 241, 0.05); padding-top: 0.5rem; padding-bottom: 0.5rem; border-radius: 0 0.375rem 0.375rem 0; }
+        .prose-digest code { background: rgba(51, 65, 85, 0.6); padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.85em; color: #e2e8f0; border: 1px solid rgba(100, 116, 139, 0.3); }
+        .prose-digest hr { border-color: #334155; margin: 1.5rem 0; }
+
+        /* Light mode adjustments */
+        html:not(.dark) .prose-digest h1 { color: #0f172a; border-bottom-color: #e2e8f0; }
+        html:not(.dark) .prose-digest h2 { color: #1e293b; }
+        html:not(.dark) .prose-digest h3 { color: #334155; }
+        html:not(.dark) .prose-digest p, html:not(.dark) .prose-digest ul, html:not(.dark) .prose-digest ol { color: #334155; }
+        html:not(.dark) .prose-digest strong { color: #0f172a; }
+        html:not(.dark) .prose-digest a { color: #4f46e5; }
+        html:not(.dark) .prose-digest code { background: #f1f5f9; color: #0f172a; border-color: #cbd5e1; }
+        html:not(.dark) .prose-digest blockquote { color: #475569; background: rgba(99, 102, 241, 0.04); }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 flex items-center justify-center min-h-screen">
+<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-indigo-500 selection:text-white transition-colors duration-200">
 
-    <div class="w-full max-w-md bg-white p-8 rounded-2xl shadow-lg">
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-slate-900">GitHub Digest Agent 📂</h1>
-            <p class="text-slate-500 mt-2">Get AI-powered daily summaries of any public GitHub repo.</p>
-        </div>
+    <!-- Subtle background glowing mesh -->
+    <div class="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+        <div class="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/15 rounded-full blur-3xl"></div>
+        <div class="absolute top-1/3 -right-40 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-40 left-1/3 w-96 h-96 bg-sky-600/10 rounded-full blur-3xl"></div>
+    </div>
 
-        <form id="digest-form">
-            <div class="space-y-4">
-                <div>
-                    <label for="repo" class="block text-sm font-medium text-slate-600">GitHub Repository</label>
-                    <input type="text" id="repo" name="repo" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="owner/repo (e.g., facebook/react)" required>
+    <!-- Top Navigation Bar -->
+    <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40 transition-colors">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25 ring-1 ring-white/20">
+                    <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                    </svg>
                 </div>
                 <div>
-                    <label for="email" class="block text-sm font-medium text-slate-600">Your Email</label>
-                    <input type="email" id="email" name="email" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="you@example.com" required>
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-lg text-white tracking-tight">GitHub Digest</span>
+                        <span class="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">AI Agent</span>
+                    </div>
+                    <p class="text-xs text-slate-400">Daily repository intelligence synthesized with Gemini 1.5 Flash</p>
                 </div>
             </div>
 
-            <button type="submit" id="submit-btn" class="mt-8 w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out disabled:bg-indigo-300">
-                Send Me a Digest
-            </button>
-        </form>
-        
-        <div id="status-message" class="mt-6 text-center text-sm"></div>
-    </div>
+            <!-- Header Controls & Status Badges -->
+            <div class="flex items-center gap-3">
+                <div id="gemini-status-badge" class="hidden sm:flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-slate-800/80 border border-slate-700/60 text-slate-300">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>Gemini 1.5 Flash</span>
+                </div>
+                <div id="smtp-status-badge" class="hidden md:flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-slate-800/80 border border-slate-700/60 text-slate-400">
+                    <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    <span>SMTP Ready</span>
+                </div>
 
+                <!-- Theme Toggle Button -->
+                <button id="theme-toggle-btn" type="button" aria-label="Toggle theme" class="p-2 rounded-xl bg-slate-800/60 border border-slate-700/60 text-slate-400 hover:text-white hover:bg-slate-800 transition">
+                    <svg id="moon-icon" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                    <svg id="sun-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Workspace -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- LEFT PANEL: Configuration Deck (lg:col-span-5) -->
+            <div class="lg:col-span-5 space-y-6">
+                
+                <!-- Main Card: Digest Generator Form -->
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl backdrop-blur-sm relative overflow-hidden">
+                    <div class="flex items-center justify-between mb-5">
+                        <div class="flex items-center gap-2">
+                            <span class="flex h-2.5 w-2.5 relative">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-500"></span>
+                            </span>
+                            <h2 class="font-bold text-white text-base">Generate Digest</h2>
+                        </div>
+                        <span class="text-xs text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-700/50 flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            Past 24h Window
+                        </span>
+                    </div>
+
+                    <form id="digest-form" class="space-y-4">
+                        <!-- Repository Input -->
+                        <div>
+                            <label for="repo" class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center justify-between">
+                                <span>GitHub Repository</span>
+                                <span class="text-slate-500 font-normal lowercase">owner/repo</span>
+                            </label>
+                            <div class="relative rounded-xl shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                                </div>
+                                <input 
+                                    type="text" 
+                                    id="repo" 
+                                    name="repo" 
+                                    class="block w-full pl-10 pr-9 py-2.5 text-sm bg-slate-950/70 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 focus:border-indigo-500 transition" 
+                                    placeholder="e.g. facebook/react" 
+                                    required
+                                    autocomplete="off"
+                                    spellcheck="false"
+                                >
+                                <button type="button" id="clear-repo-btn" class="hidden absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-white">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                            
+                            <!-- Popular Quick Presets -->
+                            <div class="mt-2.5">
+                                <span class="text-[11px] text-slate-400 block mb-1.5">Popular Repositories:</span>
+                                <div class="flex flex-wrap gap-1.5" id="presets-container">
+                                    <button type="button" class="preset-pill text-xs px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-indigo-600/30 text-slate-300 hover:text-indigo-200 border border-slate-700/60 hover:border-indigo-500/50 transition">pallets/flask</button>
+                                    <button type="button" class="preset-pill text-xs px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-indigo-600/30 text-slate-300 hover:text-indigo-200 border border-slate-700/60 hover:border-indigo-500/50 transition">facebook/react</button>
+                                    <button type="button" class="preset-pill text-xs px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-indigo-600/30 text-slate-300 hover:text-indigo-200 border border-slate-700/60 hover:border-indigo-500/50 transition">vercel/next.js</button>
+                                    <button type="button" class="preset-pill text-xs px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-indigo-600/30 text-slate-300 hover:text-indigo-200 border border-slate-700/60 hover:border-indigo-500/50 transition">tailwindlabs/tailwindcss</button>
+                                    <button type="button" class="preset-pill text-xs px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-indigo-600/30 text-slate-300 hover:text-indigo-200 border border-slate-700/60 hover:border-indigo-500/50 transition">astral-sh/uv</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Delivery Mode Selection Tabs -->
+                        <div class="pt-2">
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+                                Output Destination
+                            </label>
+                            <div class="grid grid-cols-2 gap-2 p-1 bg-slate-950/80 rounded-xl border border-slate-800">
+                                <button type="button" id="mode-preview-btn" class="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold bg-indigo-600 text-white shadow-sm transition">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    Live Preview
+                                </button>
+                                <button type="button" id="mode-email-btn" class="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                    Send via Email
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Email Input Container (Expandable) -->
+                        <div id="email-field-container" class="hidden transition-all duration-300">
+                            <label for="email" class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+                                Recipient Email Address
+                            </label>
+                            <div class="relative rounded-xl shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"/></svg>
+                                </div>
+                                <input 
+                                    type="email" 
+                                    id="email" 
+                                    name="email" 
+                                    class="block w-full pl-10 pr-3 py-2.5 text-sm bg-slate-950/70 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/80 focus:border-indigo-500 transition" 
+                                    placeholder="you@company.com"
+                                >
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-1">Digest will be dispatched to this inbox using configured SMTP server.</p>
+                        </div>
+
+                        <!-- Main Action Button -->
+                        <div class="pt-3">
+                            <button 
+                                type="submit" 
+                                id="submit-btn" 
+                                class="w-full relative group overflow-hidden bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 text-white font-semibold py-3 px-5 rounded-xl shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
+                            >
+                                <span class="flex items-center gap-2 font-medium tracking-wide">
+                                    <svg id="sparkle-icon" class="w-4 h-4 text-indigo-200 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+                                    <span id="btn-text">Generate AI Digest</span>
+                                </span>
+                                <div id="btn-spinner" class="hidden">
+                                    <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </div>
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Realtime Stepper Progress -->
+                    <div id="progress-stepper" class="hidden mt-5 pt-4 border-t border-slate-800 space-y-2.5">
+                        <div class="flex items-center gap-3 text-xs" id="step-1">
+                            <span class="step-indicator w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-[10px] ring-1 ring-indigo-500/30">1</span>
+                            <span class="step-label text-slate-300">Connecting to GitHub REST API...</span>
+                        </div>
+                        <div class="flex items-center gap-3 text-xs" id="step-2">
+                            <span class="step-indicator w-5 h-5 rounded-full bg-slate-800 text-slate-500 flex items-center justify-center font-bold text-[10px]">2</span>
+                            <span class="step-label text-slate-500">Extracting 24h pull requests & issues...</span>
+                        </div>
+                        <div class="flex items-center gap-3 text-xs" id="step-3">
+                            <span class="step-indicator w-5 h-5 rounded-full bg-slate-800 text-slate-500 flex items-center justify-center font-bold text-[10px]">3</span>
+                            <span class="step-label text-slate-500">Synthesizing digest with Gemini 1.5 Flash...</span>
+                        </div>
+                    </div>
+
+                    <!-- Secondary Automation Trigger -->
+                    <div class="mt-5 pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                        <span class="flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            Automated schedule:
+                        </span>
+                        <button type="button" id="trigger-daily-btn" class="text-indigo-400 hover:text-indigo-300 font-medium hover:underline transition">
+                            Trigger Daily Cron Digest &rarr;
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Recent History / Saved Card -->
+                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            Recent Inquiries
+                        </h3>
+                        <button type="button" id="clear-history-btn" class="text-[11px] text-slate-500 hover:text-slate-300 transition">Clear</button>
+                    </div>
+                    <div id="history-list" class="space-y-1.5 text-xs text-slate-400">
+                        <!-- Populated by JavaScript -->
+                        <div class="text-slate-500 italic text-[11px] py-1">No repositories searched yet.</div>
+                    </div>
+                </div>
+
+                <!-- Architecture & Security Note -->
+                <div class="p-4 rounded-xl bg-slate-900/40 border border-slate-800/60 text-xs text-slate-400 space-y-1.5">
+                    <div class="flex items-center gap-2 text-slate-300 font-semibold text-[11px]">
+                        <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                        Security & Rate Limits
+                    </div>
+                    <p class="text-[11px] leading-relaxed text-slate-400">
+                        Public GitHub API queries are cached and scoped to the past 24 hours. Gemini Flash extracts key themes without storing your credentials.
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- RIGHT PANEL: Digest Workspace & Intelligence Viewer (lg:col-span-7) -->
+            <div class="lg:col-span-7">
+                
+                <!-- Status Toast Notification (Floating) -->
+                <div id="status-toast" class="hidden mb-4 p-4 rounded-xl border text-sm flex items-start gap-3 transition-all duration-300 shadow-lg">
+                    <div id="toast-icon" class="flex-shrink-0 mt-0.5"></div>
+                    <div class="flex-1">
+                        <div id="toast-title" class="font-semibold text-xs uppercase tracking-wider"></div>
+                        <div id="toast-message" class="text-xs mt-0.5 leading-relaxed"></div>
+                    </div>
+                    <button type="button" id="close-toast-btn" class="text-slate-400 hover:text-white">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <!-- Digest Content Card -->
+                <div class="bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden min-h-[580px] flex flex-col">
+                    
+                    <!-- Header Bar (Active when digest exists) -->
+                    <div id="digest-header-bar" class="hidden border-b border-slate-800 bg-slate-950/60 p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold text-xs">
+                                GH
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 id="digest-repo-title" class="font-bold text-white text-base tracking-tight hover:underline cursor-pointer">
+                                        owner/repo
+                                    </h3>
+                                    <a id="digest-external-link" href="#" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:text-white" title="Open on GitHub">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                    </a>
+                                </div>
+                                <div class="flex items-center gap-3 text-xs text-slate-400 mt-0.5">
+                                    <span id="digest-timestamp" class="flex items-center gap-1">
+                                        <svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        Just now
+                                    </span>
+                                    <span id="digest-email-badge" class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                        Preview Mode
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stats Pills -->
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span id="stat-total" class="px-2.5 py-1 rounded-lg bg-slate-800 text-xs font-medium text-slate-300 border border-slate-700/60">
+                                Total: <b class="text-white">0</b>
+                            </span>
+                            <span id="stat-prs" class="px-2.5 py-1 rounded-lg bg-purple-950/60 text-xs font-medium text-purple-300 border border-purple-800/50 flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
+                                PRs: <b class="text-white">0</b>
+                            </span>
+                            <span id="stat-issues" class="px-2.5 py-1 rounded-lg bg-sky-950/60 text-xs font-medium text-sky-300 border border-sky-800/50 flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                Issues: <b class="text-white">0</b>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Sub-Tabs & Action Toolbar -->
+                    <div id="digest-toolbar" class="hidden border-b border-slate-800/80 bg-slate-900/50 px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
+                        <!-- Left View Tabs -->
+                        <div class="flex items-center gap-1">
+                            <button type="button" id="tab-summary-btn" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-white border border-slate-700/60 transition flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                AI Summary
+                            </button>
+                            <button type="button" id="tab-raw-btn" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
+                                Raw Activity Feed
+                            </button>
+                            <button type="button" id="tab-markdown-btn" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                                Markdown Source
+                            </button>
+                        </div>
+
+                        <!-- Right Actions -->
+                        <div class="flex items-center gap-2">
+                            <button type="button" id="copy-digest-btn" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition flex items-center gap-1.5">
+                                <svg id="copy-icon" class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                                <span id="copy-text">Copy</span>
+                            </button>
+                            <button type="button" id="download-digest-btn" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                <span>Export .md</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Viewport Content Area -->
+                    <div class="p-6 flex-1 flex flex-col overflow-y-auto max-h-[700px]">
+
+                        <!-- STATE 1: Empty / Welcome State -->
+                        <div id="state-empty" class="my-auto py-12 flex flex-col items-center justify-center text-center max-w-md mx-auto">
+                            <div class="w-16 h-16 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center mb-5 shadow-inner">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-bold text-white tracking-tight mb-2">No Digest Generated Yet</h3>
+                            <p class="text-sm text-slate-400 leading-relaxed mb-6">
+                                Enter any public repository (e.g. <span class="font-mono text-indigo-300 text-xs bg-indigo-950/50 px-1.5 py-0.5 rounded border border-indigo-800/40">facebook/react</span>) or click one of the quick presets on the left to synthesize the last 24 hours of activity into an executive digest.
+                            </p>
+                            
+                            <!-- Highlights list -->
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full text-left">
+                                <div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+                                    <span class="text-xs font-semibold text-indigo-400 block mb-1">🚀 Pull Requests</span>
+                                    <span class="text-[11px] text-slate-400">Merged features, fixes & PR discussions.</span>
+                                </div>
+                                <div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+                                    <span class="text-xs font-semibold text-purple-400 block mb-1">🐛 Issues</span>
+                                    <span class="text-[11px] text-slate-400">Community bug reports and questions.</span>
+                                </div>
+                                <div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+                                    <span class="text-xs font-semibold text-emerald-400 block mb-1">⚡ Gemini AI</span>
+                                    <span class="text-[11px] text-slate-400">Concise, formatted executive briefs.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- STATE 2: Loading State -->
+                        <div id="state-loading" class="hidden my-auto py-16 flex flex-col items-center justify-center text-center">
+                            <div class="relative w-16 h-16 mb-6">
+                                <div class="absolute inset-0 rounded-full border-4 border-indigo-500/20"></div>
+                                <div class="absolute inset-0 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin"></div>
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-indigo-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                </div>
+                            </div>
+                            <h3 class="text-base font-bold text-white mb-1">Synthesizing Repository Activity...</h3>
+                            <p class="text-xs text-slate-400 max-w-sm mb-6">
+                                GitHub events are being fetched and synthesized by Gemini 1.5 Flash into an actionable briefing.
+                            </p>
+                            <!-- Skeleton animation -->
+                            <div class="w-full max-w-md space-y-3">
+                                <div class="h-4 bg-slate-800/80 rounded animate-pulse w-3/4 mx-auto"></div>
+                                <div class="h-4 bg-slate-800/60 rounded animate-pulse w-full"></div>
+                                <div class="h-4 bg-slate-800/40 rounded animate-pulse w-5/6 mx-auto"></div>
+                            </div>
+                        </div>
+
+                        <!-- STATE 3: Content Displays -->
+                        <!-- A. Formatted AI Summary -->
+                        <div id="view-summary" class="hidden prose-digest">
+                            <div id="summary-content" class="text-sm"></div>
+                        </div>
+
+                        <!-- B. Raw Activity Feed -->
+                        <div id="view-raw" class="hidden">
+                            <pre id="raw-content" class="bg-slate-950 p-4 rounded-xl text-xs text-slate-300 font-mono whitespace-pre-wrap leading-relaxed border border-slate-800 overflow-x-auto"></pre>
+                        </div>
+
+                        <!-- C. Raw Markdown Source -->
+                        <div id="view-markdown" class="hidden">
+                            <pre id="markdown-content" class="bg-slate-950 p-4 rounded-xl text-xs text-indigo-300 font-mono whitespace-pre-wrap leading-relaxed border border-slate-800 overflow-x-auto"></pre>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/80 py-6 mt-12 bg-slate-950/80 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+                <span>GitHub Activity Digest Agent</span>
+                <span>•</span>
+                <span>Google Gemini 1.5 Flash</span>
+            </div>
+            <div class="text-slate-500 text-[11px]">
+                Built with Flask, Tailwind CSS & Google Generative AI
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
     <script>
+        // DOM Elements
         const form = document.getElementById('digest-form');
+        const repoInput = document.getElementById('repo');
+        const emailInput = document.getElementById('email');
         const submitBtn = document.getElementById('submit-btn');
-        const statusMessage = document.getElementById('status-message');
+        const btnText = document.getElementById('btn-text');
+        const btnSpinner = document.getElementById('btn-spinner');
+        const sparkleIcon = document.getElementById('sparkle-icon');
+        const clearRepoBtn = document.getElementById('clear-repo-btn');
+        
+        // Modes
+        const modePreviewBtn = document.getElementById('mode-preview-btn');
+        const modeEmailBtn = document.getElementById('mode-email-btn');
+        const emailFieldContainer = document.getElementById('email-field-container');
+        let currentMode = 'preview'; // 'preview' or 'email'
 
+        // Views & States
+        const stateEmpty = document.getElementById('state-empty');
+        const stateLoading = document.getElementById('state-loading');
+        const digestHeaderBar = document.getElementById('digest-header-bar');
+        const digestToolbar = document.getElementById('digest-toolbar');
+        const viewSummary = document.getElementById('view-summary');
+        const viewRaw = document.getElementById('view-raw');
+        const viewMarkdown = document.getElementById('view-markdown');
+        const summaryContent = document.getElementById('summary-content');
+        const rawContent = document.getElementById('raw-content');
+        const markdownContent = document.getElementById('markdown-content');
+
+        // Toolbar Tabs
+        const tabSummaryBtn = document.getElementById('tab-summary-btn');
+        const tabRawBtn = document.getElementById('tab-raw-btn');
+        const tabMarkdownBtn = document.getElementById('tab-markdown-btn');
+        const copyDigestBtn = document.getElementById('copy-digest-btn');
+        const copyText = document.getElementById('copy-text');
+        const downloadDigestBtn = document.getElementById('download-digest-btn');
+
+        // Header elements
+        const digestRepoTitle = document.getElementById('digest-repo-title');
+        const digestExternalLink = document.getElementById('digest-external-link');
+        const digestTimestamp = document.getElementById('digest-timestamp');
+        const digestEmailBadge = document.getElementById('digest-email-badge');
+        const statTotal = document.getElementById('stat-total');
+        const statPrs = document.getElementById('stat-prs');
+        const statIssues = document.getElementById('stat-issues');
+
+        // Toast
+        const statusToast = document.getElementById('status-toast');
+        const toastTitle = document.getElementById('toast-title');
+        const toastMessage = document.getElementById('toast-message');
+        const toastIcon = document.getElementById('toast-icon');
+        const closeToastBtn = document.getElementById('close-toast-btn');
+
+        // Stepper
+        const progressStepper = document.getElementById('progress-stepper');
+        const triggerDailyBtn = document.getElementById('trigger-daily-btn');
+        const historyList = document.getElementById('history-list');
+        const clearHistoryBtn = document.getElementById('clear-history-btn');
+
+        // System badges
+        const geminiStatusBadge = document.getElementById('gemini-status-badge');
+        const smtpStatusBadge = document.getElementById('smtp-status-badge');
+
+        // Theme Toggle
+        const themeToggleBtn = document.getElementById('theme-toggle-btn');
+        const sunIcon = document.getElementById('sun-icon');
+        const moonIcon = document.getElementById('moon-icon');
+
+        // State holder
+        let currentDigestData = null;
+
+        // Initialize System Status
+        async function fetchSystemStatus() {
+            try {
+                const res = await fetch('/api/status');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (!data.gemini_configured) {
+                        geminiStatusBadge.className = 'hidden sm:flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30';
+                        geminiStatusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400"></span><span>API Key Missing</span>';
+                        geminiStatusBadge.title = 'Add GEMINI_API_KEY in .env to enable AI narrative generation';
+                    }
+                    if (!data.smtp_configured) {
+                        smtpStatusBadge.className = 'hidden md:flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700/60';
+                        smtpStatusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span><span>SMTP Local</span>';
+                    }
+                    if (data.default_repo && !repoInput.value) {
+                        repoInput.placeholder = `e.g. ${data.default_repo}`;
+                    }
+                }
+            } catch (err) {
+                console.warn('System status probe:', err);
+            }
+        }
+        fetchSystemStatus();
+
+        // Theme Toggle Handler
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            if (savedTheme === 'light') {
+                document.documentElement.classList.remove('dark');
+                sunIcon.classList.add('hidden');
+                moonIcon.classList.remove('hidden');
+            } else {
+                document.documentElement.classList.add('dark');
+                sunIcon.classList.remove('hidden');
+                moonIcon.classList.add('hidden');
+            }
+        }
+        initTheme();
+
+        themeToggleBtn.addEventListener('click', () => {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            sunIcon.classList.toggle('hidden', !isDark);
+            moonIcon.classList.toggle('hidden', isDark);
+        });
+
+        // Mode Switching
+        modePreviewBtn.addEventListener('click', () => {
+            currentMode = 'preview';
+            modePreviewBtn.className = 'flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold bg-indigo-600 text-white shadow-sm transition';
+            modeEmailBtn.className = 'flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition';
+            emailFieldContainer.classList.add('hidden');
+            emailInput.removeAttribute('required');
+            btnText.textContent = 'Generate AI Digest';
+        });
+
+        modeEmailBtn.addEventListener('click', () => {
+            currentMode = 'email';
+            modeEmailBtn.className = 'flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold bg-indigo-600 text-white shadow-sm transition';
+            modePreviewBtn.className = 'flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition';
+            emailFieldContainer.classList.remove('hidden');
+            emailInput.setAttribute('required', 'true');
+            emailInput.focus();
+            btnText.textContent = 'Generate & Email Digest';
+        });
+
+        // Clear Repo Button
+        repoInput.addEventListener('input', () => {
+            clearRepoBtn.classList.toggle('hidden', !repoInput.value);
+        });
+        clearRepoBtn.addEventListener('click', () => {
+            repoInput.value = '';
+            clearRepoBtn.classList.add('hidden');
+            repoInput.focus();
+        });
+
+        // Preset Pills
+        document.querySelectorAll('.preset-pill').forEach(btn => {
+            btn.addEventListener('click', () => {
+                repoInput.value = btn.textContent.trim();
+                clearRepoBtn.classList.remove('hidden');
+                repoInput.focus();
+            });
+        });
+
+        // Toasts
+        function showToast(type, title, message) {
+            statusToast.classList.remove('hidden');
+            if (type === 'success') {
+                statusToast.className = 'mb-4 p-4 rounded-xl border bg-emerald-950/40 border-emerald-500/40 text-emerald-200 flex items-start gap-3 shadow-lg';
+                toastTitle.textContent = title || 'Success';
+                toastTitle.className = 'font-semibold text-xs uppercase tracking-wider text-emerald-400';
+                toastIcon.innerHTML = `<svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
+            } else if (type === 'error') {
+                statusToast.className = 'mb-4 p-4 rounded-xl border bg-rose-950/40 border-rose-500/40 text-rose-200 flex items-start gap-3 shadow-lg';
+                toastTitle.textContent = title || 'Error';
+                toastTitle.className = 'font-semibold text-xs uppercase tracking-wider text-rose-400';
+                toastIcon.innerHTML = `<svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
+            } else {
+                statusToast.className = 'mb-4 p-4 rounded-xl border bg-indigo-950/40 border-indigo-500/40 text-indigo-200 flex items-start gap-3 shadow-lg';
+                toastTitle.textContent = title || 'Notice';
+                toastTitle.className = 'font-semibold text-xs uppercase tracking-wider text-indigo-400';
+                toastIcon.innerHTML = `<svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
+            }
+            toastMessage.textContent = message;
+        }
+
+        closeToastBtn.addEventListener('click', () => {
+            statusToast.classList.add('hidden');
+        });
+
+        // History Management
+        function loadHistory() {
+            const raw = localStorage.getItem('repo_history');
+            const history = raw ? JSON.parse(raw) : [];
+            if (history.length === 0) {
+                historyList.innerHTML = `<div class="text-slate-500 italic text-[11px] py-1">No repositories searched yet.</div>`;
+                return;
+            }
+            historyList.innerHTML = history.slice(0, 5).map(repo => `
+                <div class="flex items-center justify-between group py-1 border-b border-slate-800/40 last:border-0">
+                    <button type="button" class="history-item text-xs text-slate-300 hover:text-indigo-400 font-mono transition">
+                        ${repo}
+                    </button>
+                    <span class="text-[10px] text-slate-500 group-hover:text-slate-400">&rarr;</span>
+                </div>
+            `).join('');
+
+            document.querySelectorAll('.history-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    repoInput.value = item.textContent.trim();
+                    clearRepoBtn.classList.remove('hidden');
+                    repoInput.focus();
+                });
+            });
+        }
+        loadHistory();
+
+        function addHistory(repo) {
+            const raw = localStorage.getItem('repo_history');
+            let history = raw ? JSON.parse(raw) : [];
+            history = history.filter(item => item.toLowerCase() !== repo.toLowerCase());
+            history.unshift(repo);
+            localStorage.setItem('repo_history', JSON.stringify(history.slice(0, 10)));
+            loadHistory();
+        }
+
+        clearHistoryBtn.addEventListener('click', () => {
+            localStorage.removeItem('repo_history');
+            loadHistory();
+        });
+
+        // Tab Switching
+        function switchView(tab) {
+            tabSummaryBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition flex items-center gap-1.5';
+            tabRawBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition flex items-center gap-1.5';
+            tabMarkdownBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition flex items-center gap-1.5';
+
+            viewSummary.classList.add('hidden');
+            viewRaw.classList.add('hidden');
+            viewMarkdown.classList.add('hidden');
+
+            if (tab === 'summary') {
+                tabSummaryBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-white border border-slate-700/60 transition flex items-center gap-1.5';
+                viewSummary.classList.remove('hidden');
+            } else if (tab === 'raw') {
+                tabRawBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-white border border-slate-700/60 transition flex items-center gap-1.5';
+                viewRaw.classList.remove('hidden');
+            } else if (tab === 'markdown') {
+                tabMarkdownBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-white border border-slate-700/60 transition flex items-center gap-1.5';
+                viewMarkdown.classList.remove('hidden');
+            }
+        }
+
+        tabSummaryBtn.addEventListener('click', () => switchView('summary'));
+        tabRawBtn.addEventListener('click', () => switchView('raw'));
+        tabMarkdownBtn.addEventListener('click', () => switchView('markdown'));
+
+        // Markdown Renderer with fallback
+        function renderMarkdown(md) {
+            if (typeof marked !== 'undefined' && marked.parse) {
+                return marked.parse(md);
+            }
+            // Basic fallback
+            return md
+                .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+                .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+                .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+                .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/gim, '<em>$1</em>')
+                .replace(/\[(.*?)\]\((.*?)\)/gim, '<a href="$2" target="_blank">$1</a>')
+                .replace(/\n$/gim, '<br />');
+        }
+
+        // Stepper Simulation
+        let stepperTimeout = null;
+        function startStepper() {
+            progressStepper.classList.remove('hidden');
+            const step1 = document.getElementById('step-1');
+            const step2 = document.getElementById('step-2');
+            const step3 = document.getElementById('step-3');
+
+            step1.querySelector('.step-indicator').className = 'step-indicator w-5 h-5 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-[10px] ring-2 ring-indigo-400/40';
+            step1.querySelector('.step-label').className = 'step-label text-white font-medium';
+
+            step2.querySelector('.step-indicator').className = 'step-indicator w-5 h-5 rounded-full bg-slate-800 text-slate-500 flex items-center justify-center font-bold text-[10px]';
+            step2.querySelector('.step-label').className = 'step-label text-slate-500';
+
+            step3.querySelector('.step-indicator').className = 'step-indicator w-5 h-5 rounded-full bg-slate-800 text-slate-500 flex items-center justify-center font-bold text-[10px]';
+            step3.querySelector('.step-label').className = 'step-label text-slate-500';
+
+            stepperTimeout = setTimeout(() => {
+                step2.querySelector('.step-indicator').className = 'step-indicator w-5 h-5 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-[10px] ring-2 ring-indigo-400/40';
+                step2.querySelector('.step-label').className = 'step-label text-white font-medium';
+
+                stepperTimeout = setTimeout(() => {
+                    step3.querySelector('.step-indicator').className = 'step-indicator w-5 h-5 rounded-full bg-purple-500 text-white flex items-center justify-center font-bold text-[10px] ring-2 ring-purple-400/40';
+                    step3.querySelector('.step-label').className = 'step-label text-white font-medium';
+                }, 1200);
+            }, 800);
+        }
+
+        function stopStepper() {
+            clearTimeout(stepperTimeout);
+            progressStepper.classList.add('hidden');
+        }
+
+        // Display Data in Right Panel
+        function displayDigest(data) {
+            currentDigestData = data;
+            stateEmpty.classList.add('hidden');
+            stateLoading.classList.add('hidden');
+            digestHeaderBar.classList.remove('hidden');
+            digestToolbar.classList.remove('hidden');
+
+            // Header titles and links
+            digestRepoTitle.textContent = data.repo;
+            digestExternalLink.href = `https://github.com/${data.repo}`;
+            digestTimestamp.innerHTML = `<svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+            
+            // Email status pill
+            if (data.email_status === 'sent') {
+                digestEmailBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+                digestEmailBadge.textContent = `Sent to ${data.email_recipient}`;
+            } else if (data.email_status === 'failed') {
+                digestEmailBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20';
+                digestEmailBadge.textContent = 'Email Failed (See Log)';
+            } else {
+                digestEmailBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20';
+                digestEmailBadge.textContent = 'Live Web Preview';
+            }
+
+            // Stats
+            const stats = data.stats || { total: 0, prs: 0, issues: 0 };
+            statTotal.innerHTML = `Total: <b class="text-white">${stats.total || 0}</b>`;
+            statPrs.innerHTML = `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg> PRs: <b class="text-white">${stats.prs || 0}</b>`;
+            statIssues.innerHTML = `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg> Issues: <b class="text-white">${stats.issues || 0}</b>`;
+
+            // Contents
+            summaryContent.innerHTML = renderMarkdown(data.summary || 'No summary text available.');
+            rawContent.textContent = data.raw_activity || 'No raw activity records returned.';
+            markdownContent.textContent = data.summary || '';
+
+            switchView('summary');
+        }
+
+        // Form Submit Handler
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const repo = document.getElementById('repo').value;
-            const email = document.getElementById('email').value;
+            const repo = repoInput.value.trim();
+            const email = emailInput.value.trim();
+            const sendEmail = currentMode === 'email';
 
+            if (!repo) {
+                showToast('error', 'Repository Required', 'Please enter a valid GitHub repository name (e.g. facebook/react).');
+                return;
+            }
+
+            if (sendEmail && !email) {
+                showToast('error', 'Email Required', 'Please provide a recipient email to dispatch the digest.');
+                return;
+            }
+
+            // UI Loading state
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Generating...';
-            statusMessage.textContent = 'Agent is fetching data and summarizing. This can take a moment...';
-            statusMessage.className = 'mt-6 text-center text-sm text-blue-600';
+            btnSpinner.classList.remove('hidden');
+            sparkleIcon.classList.add('hidden');
+            btnText.textContent = 'Synthesizing...';
+            stateEmpty.classList.add('hidden');
+            digestHeaderBar.classList.add('hidden');
+            digestToolbar.classList.add('hidden');
+            viewSummary.classList.add('hidden');
+            viewRaw.classList.add('hidden');
+            viewMarkdown.classList.add('hidden');
+            stateLoading.classList.remove('hidden');
+            startStepper();
 
             try {
                 const response = await fetch('/generate-digest', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ repo, email }),
+                    body: JSON.stringify({
+                        repo: repo,
+                        email: email,
+                        send_email: sendEmail
+                    }),
                 });
 
                 const result = await response.json();
 
                 if (response.ok) {
-                   
-                    statusMessage.textContent = result.message;
-                    statusMessage.className = 'mt-6 text-center text-sm text-green-600';
+                    addHistory(result.repo || repo);
+                    displayDigest(result);
+                    if (result.email_status === 'sent') {
+                        showToast('success', 'Digest Dispatched', `AI Digest successfully generated and emailed to ${email}.`);
+                    } else if (result.email_status === 'failed') {
+                        showToast('error', 'Email Delivery Issue', `Digest generated, but email sending failed: ${result.email_error || 'Check SMTP configuration'}`);
+                    } else {
+                        showToast('success', 'Digest Ready', `Activity digest for ${result.repo} synthesized successfully!`);
+                    }
                 } else {
-                 
-                    throw new Error(result.error || 'An unknown error occurred.');
+                    throw new Error(result.error || 'Failed to generate digest.');
                 }
 
             } catch (error) {
-                statusMessage.textContent = `Error: ${error.message}`;
-                statusMessage.className = 'mt-6 text-center text-sm text-red-600';
+                console.error('Error generating digest:', error);
+                showToast('error', 'Generation Failed', error.message);
+                stateLoading.classList.add('hidden');
+                if (currentDigestData) {
+                    displayDigest(currentDigestData);
+                } else {
+                    stateEmpty.classList.remove('hidden');
+                }
             } finally {
+                stopStepper();
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Send Me a Digest';
+                btnSpinner.classList.add('hidden');
+                sparkleIcon.classList.remove('hidden');
+                btnText.textContent = currentMode === 'email' ? 'Generate & Email Digest' : 'Generate AI Digest';
             }
         });
-    </script>
 
+        // Trigger Automated Daily Digest
+        triggerDailyBtn.addEventListener('click', async () => {
+            if (!confirm('Run the automated daily digest task for the configured default repository?')) return;
+
+            showToast('info', 'Triggering Scheduled Task', 'Running automated daily digest job...');
+            try {
+                const res = await fetch('/trigger-daily-digest', { method: 'POST' });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast('success', 'Daily Digest Complete', data.message);
+                    if (data.summary) {
+                        displayDigest({
+                            repo: 'Automated Daily Digest',
+                            summary: data.summary,
+                            raw_activity: 'Scheduled automation payload',
+                            stats: data.stats,
+                            email_status: 'sent'
+                        });
+                    }
+                } else {
+                    throw new Error(data.message || data.error || 'Failed to run daily digest');
+                }
+            } catch (err) {
+                showToast('error', 'Daily Digest Error', err.message);
+            }
+        });
+
+        // Copy to Clipboard
+        copyDigestBtn.addEventListener('click', async () => {
+            if (!currentDigestData || !currentDigestData.summary) return;
+            try {
+                await navigator.clipboard.writeText(currentDigestData.summary);
+                copyText.textContent = 'Copied!';
+                copyDigestBtn.className = 'px-2.5 py-1.5 rounded-lg text-xs font-medium bg-emerald-600/30 text-emerald-300 border border-emerald-500/50 transition flex items-center gap-1.5';
+                setTimeout(() => {
+                    copyText.textContent = 'Copy';
+                    copyDigestBtn.className = 'px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition flex items-center gap-1.5';
+                }, 2000);
+            } catch (err) {
+                showToast('error', 'Copy Failed', 'Unable to access clipboard');
+            }
+        });
+
+        // Download Markdown File
+        downloadDigestBtn.addEventListener('click', () => {
+            if (!currentDigestData || !currentDigestData.summary) return;
+            const filename = `${currentDigestData.repo.replace('/', '-')}-digest-${new Date().toISOString().slice(0, 10)}.md`;
+            const blob = new Blob([currentDigestData.summary], { type: 'text/markdown;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        });
+    </script>
 </body>
 </html>
