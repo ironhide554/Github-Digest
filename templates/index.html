@@ -564,14 +564,22 @@
                 const res = await fetch('/api/status');
                 if (res.ok) {
                     const data = await res.json();
-                    if (!data.gemini_configured) {
+                    if (data.gemini_configured) {
+                        const modelDisplay = data.gemini_model || 'Gemini Active';
+                        geminiStatusBadge.className = 'hidden sm:flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-slate-800/80 border border-slate-700/60 text-slate-300';
+                        geminiStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span><span>${modelDisplay}</span>`;
+                        geminiStatusBadge.title = `AI powered by ${modelDisplay}`;
+                    } else {
                         geminiStatusBadge.className = 'hidden sm:flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30';
                         geminiStatusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400"></span><span>API Key Missing</span>';
                         geminiStatusBadge.title = 'Add GEMINI_API_KEY in .env to enable AI narrative generation';
                     }
-                    if (!data.smtp_configured) {
+                    if (data.smtp_configured) {
+                        smtpStatusBadge.className = 'hidden md:flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-slate-800/80 border border-slate-700/60 text-emerald-400';
+                        smtpStatusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span><span>SMTP Ready</span>';
+                    } else {
                         smtpStatusBadge.className = 'hidden md:flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700/60';
-                        smtpStatusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span><span>SMTP Local</span>';
+                        smtpStatusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span><span>SMTP Unset</span>';
                     }
                     if (data.default_repo && !repoInput.value) {
                         repoInput.placeholder = `e.g. ${data.default_repo}`;
