@@ -1,6 +1,29 @@
+# Python bytecode and caches
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+.Python
+build/
+dist/
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+
+# Environment files & secrets
+.env
+.env*.local
+
+# IDE and Editor files
 .vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Operating System files
 .DS_Store
+Thumbs.db
+desktop.ini
